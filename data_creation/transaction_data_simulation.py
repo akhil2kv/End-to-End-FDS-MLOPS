@@ -8,10 +8,10 @@ import random
 # For plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pandarallel import pandarallel
+# from pandarallel import pandarallel
 
-# Initialization
-pandarallel.initialize()
+# # Initialization
+# pandarallel.initialize()
 
 sns.set_style('darkgrid', {'axes.facecolor': '0.9'})
 
