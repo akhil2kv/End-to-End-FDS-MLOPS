@@ -28,8 +28,10 @@ sns.set_style('darkgrid', {'axes.facecolor': '0.9'})
 #    assuming that the number of transactions per day follows a Poisson distribution. This number will be drawn from a uniform distribution (0,4).
 # - The generate_customer_profiles_table function provides an implementation for generating a table of customer profiles.
 #    It takes as input the number of customers for which to generate a profile and a random state for reproducibility.
-#    It returns a DataFrame containing the properties for each customer.
+#    It returns a
+#  DataFrame containing the properties for each customer.
 # ****************************************************************
+
 
 def generate_customer_profiles_table(n_customers, random_state=0):
     
@@ -222,3 +224,26 @@ def generate_dataset(n_customers = 10000, n_terminals = 1000000, nb_days=90, sta
                      r=5)
 
 print(transactions_df.shape)
+
+def visualize_transactions(transactions_df):
+
+    distribution_amount_times_fig, ax = plt.subplots(1, 2, figsize=(18,4))
+
+    amount_val = transactions_df[transactions_df.TX_TIME_DAYS<10]['TX_AMOUNT'].sample(n=10000).values
+    time_val = transactions_df[transactions_df.TX_TIME_DAYS<10]['TX_TIME_SECONDS'].sample(n=10000).values
+
+    sns.distplot(amount_val, ax=ax[0], color='r', hist = True, kde = False)
+    ax[0].set_title('Distribution of transaction amounts', fontsize=14)
+    ax[0].set_xlim([min(amount_val), max(amount_val)])
+    ax[0].set(xlabel = "Amount", ylabel="Number of transactions")
+
+    # We divide the time variables by 86400 to transform seconds to days in the plot
+    sns.distplot(time_val/86400, ax=ax[1], color='b', bins = 100, hist = True, kde = False)
+    ax[1].set_title('Distribution of transaction times', fontsize=14)
+    ax[1].set_xlim([min(time_val/86400), max(time_val/86400)])
+    ax[1].set_xticks(range(10))
+    ax[1].set(xlabel = "Time (days)", ylabel="Number of transactions")
+
+    distribution_amount_times_fig.show()
+
+visualize_transactions(transactions_df)
