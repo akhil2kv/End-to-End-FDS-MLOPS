@@ -246,4 +246,85 @@ def visualize_transactions(transactions_df):
 
     distribution_amount_times_fig.show()
 
-visualize_transactions(transactions_df)
+# Fraud scenarios generation
+# This last step of the simulation adds fraudulent transactions to the dataset, using the following fraud scenarios:
+
+def add_frauds(customer_profiles_table, terminal_profiles_table, transactions_df):
+    
+    # By default, all transactions are genuine
+    transactions_df['TX_FRAUD']=0
+    transactions_df['TX_FRAUD_SCENARIO']=0
+    
+    # Scenario 1
+    transactions_df.loc[transactions_df.TX_AMOUNT>220, 'TX_FRAUD']=1
+    transactions_df.loc[transactions_df.TX_AMOUNT>220, 'TX_FRAUD_SCENARIO']=1
+    nb_frauds_scenario_1=transactions_df.TX_FRAUD.sum()
+    print("Number of frauds from scenario 1: "+str(nb_frauds_scenario_1))
+    
+    # Scenario 2
+    for day in range(transactions_df.TX_TIME_DAYS.max()):
+        
+        compromised_terminals = terminal_profiles_table.TERMINAL_ID.sample(n=2, random_state=day)
+        
+        compromised_transactions=transactions_df[(transactions_df.TX_TIME_DAYS>=day) & 
+                                                    (transactions_df.TX_TIME_DAYS<day+28) & 
+                                                    (transactions_df.TERMINAL_ID.isin(compromised_terminals))]
+                            
+        transactions_df.loc[compromised_transactions.index,'TX_FRAUD']=1
+        transactions_df.loc[compromised_transactions.index,'TX_FRAUD_SCENARIO']=2
+    
+    nb_frauds_scenario_2=transactions_df.TX_FRAUD.sum()-nb_frauds_scenario_1
+    print("Number of frauds from scenario 2: "+str(nb_frauds_scenario_2))
+    
+    # Scenario 3
+    for day in range(transactions_df.TX_TIME_DAYS.max()):
+        
+        compromised_customers = customer_profiles_table.CUSTOMER_ID.sample(n=3, random_state=day).values
+        
+        compromised_transactions=transactions_df[(transactions_df.TX_TIME_DAYS>=day) & 
+                                                    (transactions_df.TX_TIME_DAYS<day+14) & 
+                                                    (transactions_df.CUSTOMER_ID.isin(compromised_customers))]
+        
+        nb_compromised_transactions=len(compromised_transactions)
+        
+        
+        random.seed(day)
+        index_fauds = random.sample(list(compromised_transactions.index.values),k=int(nb_compromised_transactions/3))
+        
+        transactions_df.loc[index_fauds,'TX_AMOUNT']=transactions_df.loc[index_fauds,'TX_AMOUNT']*5
+        transactions_df.loc[index_fauds,'TX_FRAUD']=1
+        transactions_df.loc[index_fauds,'TX_FRAUD_SCENARIO']=3
+        
+                             
+    nb_frauds_scenario_3=transactions_df.TX_FRAUD.sum()-nb_frauds_scenario_2-nb_frauds_scenario_1
+    print("Number of frauds from scenario 3: "+str(nb_frauds_scenario_3))
+    
+    return transactions_df 
+
+
+transactions_df = add_frauds(customer_profiles_table, terminal_profiles_table, transactions_df)
+
+# ****************************************************************
+# Saving of dataset
+# Instead of saving the whole transaction dataset, we split the dataset into daily batches. 
+# This will allow later the loading of specific periods instead of the whole dataset. 
+# The pickle format is used, rather than CSV, to speed up the loading times. All files are saved in the DIR_OUTPUT folder. 
+# The names of the files are the dates, with the .pkl extension
+# ****************************************************************************
+
+DIR_OUTPUT = "./simulated-data-raw/"
+
+if not os.path.exists(DIR_OUTPUT):
+    os.makedirs(DIR_OUTPUT)
+
+start_date = datetime.datetime.strptime("2018-04-01", "%Y-%m-%d")
+
+for day in range(transactions_df.TX_TIME_DAYS.max()+1):
+    
+    transactions_day = transactions_df[transactions_df.TX_TIME_DAYS==day].sort_values('TX_TIME_SECONDS')
+    
+    date = start_date + datetime.timedelta(days=day)
+    filename_output = date.strftime("%Y-%m-%d")+'.pkl'
+    
+    # Protocol=4 required for Google Colab
+    transactions_day.to_pickle(DIR_OUTPUT+filename_output, protocol=4)
