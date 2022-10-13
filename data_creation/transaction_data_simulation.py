@@ -205,14 +205,7 @@ def generate_dataset(n_customers = 10000, n_terminals = 1000000, nb_days=90, sta
     return (customer_profiles_table, terminal_profiles_table, transactions_df)
 
 
-(customer_profiles_table, terminal_profiles_table, transactions_df)=\
-    generate_dataset(n_customers = 5000, 
-                     n_terminals = 10000, 
-                     nb_days=183, 
-                     start_date="2018-04-01", 
-                     r=5)
 
-print(transactions_df.shape)
 
 def visualize_transactions(transactions_df):
 
@@ -292,29 +285,38 @@ def add_frauds(customer_profiles_table, terminal_profiles_table, transactions_df
     return transactions_df 
 
 
-transactions_df = add_frauds(customer_profiles_table, terminal_profiles_table, transactions_df)
+def gen_and_save():
 
-# ****************************************************************
-# Saving of dataset
-# Instead of saving the whole transaction dataset, we split the dataset into daily batches. 
-# This will allow later the loading of specific periods instead of the whole dataset. 
-# The pickle format is used, rather than CSV, to speed up the loading times. All files are saved in the DIR_OUTPUT folder. 
-# The names of the files are the dates, with the .pkl extension
-# ****************************************************************************
+    (customer_profiles_table, terminal_profiles_table, transactions_df)=\
+    generate_dataset(n_customers = 5000, 
+                     n_terminals = 10000, 
+                     nb_days=183, 
+                     start_date="2018-04-01", 
+                     r=5)
 
-DIR_OUTPUT = "./simulated-data-raw/"
+    transactions_df = add_frauds(customer_profiles_table, terminal_profiles_table, transactions_df)
 
-if not os.path.exists(DIR_OUTPUT):
-    os.makedirs(DIR_OUTPUT)
+    # ****************************************************************
+    # Saving of dataset
+    # Instead of saving the whole transaction dataset, we split the dataset into daily batches. 
+    # This will allow later the loading of specific periods instead of the whole dataset. 
+    # The pickle format is used, rather than CSV, to speed up the loading times. All files are saved in the DIR_OUTPUT folder. 
+    # The names of the files are the dates, with the .pkl extension
+    # ****************************************************************************
 
-start_date = datetime.datetime.strptime("2018-04-01", "%Y-%m-%d")
+    DIR_OUTPUT = "./simulated-data-raw/"
 
-for day in range(transactions_df.TX_TIME_DAYS.max()+1):
-    
-    transactions_day = transactions_df[transactions_df.TX_TIME_DAYS==day].sort_values('TX_TIME_SECONDS')
-    
-    date = start_date + datetime.timedelta(days=day)
-    filename_output = date.strftime("%Y-%m-%d")+'.pkl'
-    
-    # Protocol=4 required for Google Colab
-    transactions_day.to_pickle(DIR_OUTPUT+filename_output, protocol=4)
+    if not os.path.exists(DIR_OUTPUT):
+        os.makedirs(DIR_OUTPUT)
+
+    start_date = datetime.datetime.strptime("2018-04-01", "%Y-%m-%d")
+
+    for day in range(transactions_df.TX_TIME_DAYS.max()+1):
+        
+        transactions_day = transactions_df[transactions_df.TX_TIME_DAYS==day].sort_values('TX_TIME_SECONDS')
+        
+        date = start_date + datetime.timedelta(days=day)
+        filename_output = date.strftime("%Y-%m-%d")+'.csv'
+        
+        # Protocol=4 required for Google Colab
+        transactions_day.to_csv(DIR_OUTPUT+filename_output)

@@ -1,0 +1,4 @@
+data_creation/simulated-data-raw/
+data_creation/__pycache__/
+pyenv/
+.vscode/
